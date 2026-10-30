@@ -1,0 +1,123 @@
+# =====================================================================
+#  NOTIFICADOR DE SOFTWARE NÃO HOMOLOGADO — configuração
+#  Caminhos relativos partem da pasta deste arquivo.
+#  Colunas podem ser indicadas por LETRA ("C") ou pelo NOME do cabeçalho
+#  ("Risk Level"). Para forçar: "col:C" ou "cab:Risk Level".
+#  Dica: rode  python notificador.py mapear  para ver letras e cabeçalhos.
+# =====================================================================
+
+geral:
+  formato_data: "%d/%m/%Y"
+
+# ---------------------------------------------------------------------
+# PLANILHA 2 — análise de riscos (1 linha = 1 achado = 1 e-mail)
+# ---------------------------------------------------------------------
+planilha_analise:
+  arquivo: "exemplos/Analise_Riscos.xlsx"
+  aba: "Week 44"              # nome da aba; lista ["Week 43", "Week 44"]; ou vazio = 1ª aba
+  linha_cabecalho: 1
+  primeira_linha_dados: 2
+  ultima_linha_dados:         # vazio = até a última linha preenchida
+  colunas:                    # nome_do_campo: coluna   →  no Word use {{ nome_do_campo }}
+    ticket: "Ticket"
+    data_analise: "B"
+    aplicacao: "Application"
+    versao: "Version"
+    risk_level: "Risk Level"
+    flag: "Flag"
+    endpoint: "Endpoint"
+    usuario: "Username"
+    gestor: "Manager"
+    email_gestor: "Manager Email"
+    pais: "Country"
+    licenca: "License?"
+    desenvolvedor: "Developer"
+    vulnerabilidades: "Possible Vulnerabilities"
+    descricao: "Description"
+    justificativa: "Justify"
+    parecer_grc: "GRC Analisys"
+    alternativa: "Alternativa homologada"
+
+# ---------------------------------------------------------------------
+# PLANILHA 1 — inventário de software (opcional: complementa o achado)
+# Campos que já vieram preenchidos da análise têm prioridade.
+# ---------------------------------------------------------------------
+planilha_inventario:
+  arquivo: "exemplos/Inventario_Software.xlsx"
+  aba: "Inventario"
+  linha_cabecalho: 1
+  primeira_linha_dados: 2
+  colunas:
+    endpoint: "Endpoint"
+    software: "Software"
+    versao_instalada: "Version"
+    fabricante: "Publisher"
+    data_instalacao: "Install Date"
+    ultima_visualizacao: "Last Seen"
+  ligacao:                    # campo_da_analise: campo_do_inventario
+    endpoint: endpoint
+    aplicacao: software
+
+# ---------------------------------------------------------------------
+# CRITICIDADE → modelo Word e assunto
+# ---------------------------------------------------------------------
+criticidade:
+  campo: risk_level
+  notificar: [EMERGENCY, CRITICAL, HIGH]   # só estes níveis viram e-mail ao gestor;
+                                           # os demais ficam na planilha para controle/dashboards
+  sinonimos:                  # valores da planilha que significam o mesmo nível
+    EMERGENCIA: EMERGENCY
+    CRITICO: CRITICAL
+    ALTO: HIGH
+    MEDIO: MEDIUM
+    BAIXO: LOW
+    INFORMATIVO: INFORMATIONAL
+  modelos:
+    EMERGENCY:
+      arquivo: "modelos/EMERGENCY.docx"
+      assunto: "[EMERGÊNCIA] Software não homologado — {{ aplicacao }} em {{ endpoint }} | {{ ticket }}"
+    CRITICAL:
+      arquivo: "modelos/CRITICAL.docx"
+      assunto: "[CRÍTICO] Software não homologado — {{ aplicacao }} em {{ endpoint }} | {{ ticket }}"
+    HIGH:
+      arquivo: "modelos/HIGH.docx"
+      assunto: "[ALTO] Software não homologado — {{ aplicacao }} em {{ endpoint }} | {{ ticket }}"
+
+# ---------------------------------------------------------------------
+# RESSALVA — achado notificável com dado faltando não gera e-mail;
+# vira RESSALVA (saida/ressalvas.csv) para análise futura.
+# Item em lista [a, b] = basta um dos dois preenchido.
+# ---------------------------------------------------------------------
+ressalva:
+  campos_obrigatorios:
+    - endpoint
+    - usuario
+    - [email_gestor, gestor]
+
+# ---------------------------------------------------------------------
+# FILTROS (opcional) — linhas que não passam ficam fora, com o motivo no relatório
+#   contem / nao_contem / igual: lista de valores (ignora acento e maiúsculas)
+#   vazio: true  → só linhas com o campo em branco
+# ---------------------------------------------------------------------
+filtros: []
+#  - campo: parecer_grc
+#    nao_contem: ["YES"]
+
+# ---------------------------------------------------------------------
+# E-MAIL
+# para / cc aceitam campos e endereços fixos, separados por ";".
+# Nome sem "@" é resolvido pelo catálogo de endereços do Outlook.
+# ---------------------------------------------------------------------
+email:
+  campo_chave: ticket          # identifica o achado no log (evita rascunho duplicado)
+  para: "{{ email_gestor or gestor }}"
+  cc: ""                       # ex.: "grc@empresa.com; {{ usuario }}@empresa.com"
+  assunto_padrao: "[{{ criticidade }}] Software não homologado — {{ aplicacao }} em {{ endpoint }} | {{ ticket }}"
+  conta_outlook:               # vazio = conta padrão; ou "grc@empresa.com"
+  pasta_rascunhos: "Notificações GRC"   # subpasta dentro de Rascunhos; vazio = Rascunhos
+  incluir_assinatura: true     # usa a assinatura padrão do Outlook
+
+saida:
+  pasta_previa: "saida/previa"
+  log: "saida/log_notificacoes.csv"
+  ressalvas: "saida/ressalvas.csv"     # lista atual de pendências, refeita a cada execução
