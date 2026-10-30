@@ -254,6 +254,12 @@ A curated list of essential **digital forensics tools** used for investigation, 
 
 ---
 
+# 🧰 Ferramentas deste repositório
+
+- **[Notificador de software não homologado](notificador_riscos/LEIA-ME.md)**: lê as planilhas de inventário e de análise de riscos e cria um rascunho de e-mail no Outlook para o gestor de cada achado EMERGENCY, CRITICAL ou HIGH. Usa modelos Word e registra um log para auditoria.
+
+---
+
 ## 🌟 Let's Connect!
 
 Hello, Hacker! 👋 We'd love to stay connected with you. Reach out to us on any of these platforms and let's build something amazing together:
