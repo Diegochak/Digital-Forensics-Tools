@@ -142,23 +142,31 @@ def montar(cfg: dict, base: Path) -> list[tuple[dict, Email | None]]:
     campos_chave = campos_chave if isinstance(campos_chave, list) else [campos_chave]
 
     resultado = []
+    vistos: dict[str, str] = {}  # chave -> "aba:linha" do primeiro e-mail da execução
     for reg in achados:
+        partes = [reg.get(c, "") for c in campos_chave]
         info = {
             "arquivo": reg["_arquivo"], "aba": reg["_aba"], "linha": reg["_linha"],
-            "chave": "-".join(reg.get(c, "") for c in campos_chave) or f"L{reg['_linha']}",
+            "chave": "-".join(partes) if any(partes) else f"{reg['_aba']}:L{reg['_linha']}",
         }
         bruto = reg.get(crit_cfg["campo"], "")
         nivel = normalizar(bruto)
-        for parte in nivel.replace("-", " ").split():  # "4 - CRITICAL" -> CRITICAL
-            if parte in conhecidos:
-                nivel = parte
-                break
+        if nivel not in conhecidos:
+            for parte in nivel.replace("-", " ").split():  # "4 - CRITICAL" -> CRITICAL
+                if parte in conhecidos:
+                    nivel = parte
+                    break
         nivel = sinonimos.get(nivel, nivel)
         info["criticidade"] = nivel or "(vazio)"
 
         if notificar and nivel not in notificar:
             motivo = f"{nivel} fica só no controle (não notificável)" if nivel else "criticidade em branco"
             resultado.append(({**info, "status": "IGNORADO", "detalhe": motivo}, None))
+            continue
+
+        motivo = passa_filtros(reg, cfg.get("filtros"))
+        if motivo:  # linha excluída pelo filtro não vira ressalva
+            resultado.append(({**info, "status": "IGNORADO", "detalhe": f"filtro: {motivo}"}, None))
             continue
 
         faltando = campos_faltando(reg, (cfg.get("ressalva") or {}).get("campos_obrigatorios"))
@@ -168,9 +176,9 @@ def montar(cfg: dict, base: Path) -> list[tuple[dict, Email | None]]:
                                "detalhe": "falta " + ", ".join(faltando) + " — análise futura"}, None))
             continue
 
-        motivo = passa_filtros(reg, cfg.get("filtros"))
-        if motivo:
-            resultado.append(({**info, "status": "IGNORADO", "detalhe": f"filtro: {motivo}"}, None))
+        if info["chave"] in vistos:  # ex.: mesmo ticket em duas abas → um e-mail só
+            resultado.append(({**info, "status": "IGNORADO",
+                               "detalhe": f"chave repetida (já gerada em {vistos[info['chave']]})"}, None))
             continue
         modelo = modelos.get(nivel)
         if modelo is None:
@@ -206,6 +214,7 @@ def montar(cfg: dict, base: Path) -> list[tuple[dict, Email | None]]:
         info.update(para="; ".join(para), cc="; ".join(cc), assunto=assunto,
                     detalhe=" | ".join(alertas))
         email = Email(info["chave"], para, cc, assunto, modelo.estilos, corpo, info)
+        vistos[info["chave"]] = f"{info['aba']}:{info['linha']}"
         resultado.append((info, email))
     return resultado
 

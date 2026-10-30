@@ -57,7 +57,7 @@ Para usar um valor alternativo quando a célula estiver vazia: `{{ alternativa |
 
 Se um achado notificável estiver sem endpoint, sem usuário ou sem gestor (nome ou e-mail), ele não gera e-mail. Vira **RESSALVA** e aparece em `saida/ressalvas.csv`, que é refeito a cada execução com o que ainda está pendente. Quando o dado for completado na planilha, a próxima execução cria o rascunho normalmente.
 
-Os campos exigidos ficam em `ressalva › campos_obrigatorios`, no config.
+Os campos exigidos ficam em `ressalva › campos_obrigatorios`, no config. Os `filtros` são aplicados antes: uma linha excluída por filtro não vira ressalva.
 
 ## Controles
 
@@ -65,7 +65,7 @@ Os campos exigidos ficam em `ressalva › campos_obrigatorios`, no config.
   - destinatário sem e-mail
   - achado sem correspondência no inventário
   - criticidade sem modelo
-- **Sem duplicidade.** O log `saida/log_notificacoes.csv` registra cada rascunho pela chave (`campo_chave`, por padrão o ticket). Uma nova execução pula o que já foi criado.
+- **Sem duplicidade.** O log `saida/log_notificacoes.csv` registra cada rascunho pela chave (`campo_chave`, por padrão o ticket). Uma nova execução pula o que já foi criado. Na mesma execução, uma chave repetida (por exemplo, o mesmo ticket em duas abas) gera um e-mail só. As outras linhas aparecem como "chave repetida".
 - **Evidência.** O mesmo log guarda data, destinatário, assunto e status. Serve de trilha para auditoria.
 - **Destinatário sem "@"** é resolvido pelo catálogo do Outlook. Se não resolver, o rascunho é criado com status `RASCUNHO_COM_ALERTA`.
 - **Uma linha com erro** não interrompe o lote.

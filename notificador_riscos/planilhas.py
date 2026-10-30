@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import io
 import re
-import shutil
-import tempfile
 import unicodedata
 from pathlib import Path
 
@@ -42,13 +41,11 @@ def formatar_valor(valor, formato_data: str) -> str:
 
 
 def _abrir(caminho: Path):
-    """Copia para pasta temporária antes de abrir: funciona com o arquivo aberto no Excel."""
+    """Lê o arquivo para a memória antes de abrir: funciona com a planilha aberta
+    no Excel e não deixa cópias dos dados na pasta temporária."""
     if not caminho.exists():
         raise ErroConfig(f"Planilha não encontrada: {caminho}")
-    tmp_dir = Path(tempfile.mkdtemp(prefix="notificador_"))
-    copia = tmp_dir / caminho.name
-    shutil.copy2(caminho, copia)
-    return load_workbook(copia, data_only=True, read_only=True)
+    return load_workbook(io.BytesIO(caminho.read_bytes()), data_only=True, read_only=True)
 
 
 def _abas(wb, cfg_aba) -> list:

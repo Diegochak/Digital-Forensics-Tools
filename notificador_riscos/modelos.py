@@ -47,7 +47,7 @@ class Modelo:
     def preencher(self, dados: dict) -> str:
         try:
             return self._tpl.render(**dados)
-        except jinja2.UndefinedError as e:
+        except jinja2.TemplateError as e:
             raise ErroModelo(f"{self.caminho.name}: {_traduz(e)}") from None
 
 
@@ -112,8 +112,8 @@ def preencher_texto(texto: str, dados: dict) -> str:
     env = jinja2.Environment(autoescape=False, undefined=jinja2.StrictUndefined)
     try:
         return " ".join(env.from_string(texto).render(**dados).split())
-    except jinja2.UndefinedError as e:
-        raise ErroModelo(f"Assunto: {_traduz(e)}") from None
+    except jinja2.TemplateError as e:
+        raise ErroModelo(f"Config ({texto!r}): {_traduz(e)}") from None
 
 
 def montar_documento(estilos: str, corpo: str) -> str:

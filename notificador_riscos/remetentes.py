@@ -53,16 +53,18 @@ class RemetentePrevia:
         (self.pasta / nome).write_text(
             montar_documento(email.estilos, cab + email.corpo), encoding="utf-8"
         )
-        email.info["arquivo"] = nome
+        email.info["previa"] = nome
         return "PREVIA", nome
 
     def finalizar(self, itens: list[dict]) -> Path:
+        ordem = {"ERRO": 0, "RESSALVA": 1, "PREVIA": 2, "IGNORADO": 3}
+        itens = sorted(itens, key=lambda i: (ordem.get(i["status"], 9), i.get("linha", 0)))
         linhas = []
         cores = {"PREVIA": "#1a7f37", "RESSALVA": "#b26a00", "IGNORADO": "#8a8a8a", "ERRO": "#c62828"}
         for it in itens:
             link = (
-                f'<a href="{html.escape(it["arquivo"])}" target="_blank">abrir</a>'
-                if it.get("arquivo") else ""
+                f'<a href="{html.escape(it["previa"])}" target="_blank">abrir</a>'
+                if it.get("previa") else ""
             )
             linhas.append(
                 "<tr>"
@@ -78,8 +80,6 @@ class RemetentePrevia:
         total = len(itens)
         ok = sum(1 for i in itens if i["status"] == "PREVIA")
         ress = sum(1 for i in itens if i["status"] == "RESSALVA")
-        ordem = {"ERRO": 0, "RESSALVA": 1, "PREVIA": 2, "IGNORADO": 3}
-        itens = sorted(itens, key=lambda i: (ordem.get(i["status"], 9), i.get("linha", 0)))
         indice = f"""<!doctype html><html><head><meta charset="utf-8"><title>Prévia de notificações</title>
 <style>body{{font:14px Arial;margin:24px;color:#222}}table{{border-collapse:collapse;width:100%}}
 td,th{{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}}th{{background:#f3f3f3}}</style></head>
